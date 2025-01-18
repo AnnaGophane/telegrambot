@@ -34,15 +34,16 @@ if (APP_URL) {
   bot.telegram.setWebhook(`${APP_URL}/bot${BOT_TOKEN}`);
 }
 
-// Command handlers
 bot.command('start', async (ctx) => {
   await ctx.reply(
     'Welcome to Auto Forwarder! 👋\n\n' +
     'Available commands:\n' +
-    '/setforward <from_chat_id> <to_chat_id> - Setup forwarding\n' +
+    '/setforward <from_chat_id> <to_chat_id> - Setup forwarding to a single channel\n' +
+    '/setmultiforward <from_chat_id> <to_chat_id1> <to_chat_id2> ... - Setup forwarding to multiple channels\n' +
     '/stopforward - Stop forwarding\n' +
     '/status - Check current forwarding status\n' +
-    '/listchats - List all chats where bot is admin'
+    '/listchats - List all chats where bot is admin\n' +
+    '/clonebot <new_bot_token> - Create a clone of this bot'
   );
 });
 
@@ -63,11 +64,11 @@ bot.command('setforward', async (ctx) => {
     await ctx.telegram.getChat(fromChatId);
     await ctx.telegram.getChat(toChatId);
 
-    await Config.create({
-      fromChatId,
-      toChatId,
-      userId
-    });
+    await Config.findOneAndUpdate(
+      { fromChatId, userId },
+      { fromChatId, toChatIds: [toChatId], userId },
+      { upsert: true, new: true }
+    );
 
     await ctx.reply(
       `✅ Forwarding setup successfully!\n` +
@@ -77,6 +78,43 @@ bot.command('setforward', async (ctx) => {
   } catch (error) {
     await ctx.reply(
       '❌ Error: Make sure the bot is admin in both chats and the chat IDs are correct!'
+    );
+  }
+});
+
+bot.command('setmultiforward', async (ctx) => {
+  if (!ctx.message || !ctx.from) {
+    return ctx.reply('Error: Invalid command context');
+  }
+
+  const args = ctx.message.text.split(' ').slice(1);
+  if (args.length < 3) {
+    return ctx.reply('Usage: /setmultiforward <from_chat_id> <to_chat_id1> <to_chat_id2> ...');
+  }
+
+  const [fromChatId, ...toChatIds] = args;
+  const userId = ctx.from.id.toString();
+
+  try {
+    await ctx.telegram.getChat(fromChatId);
+    for (const chatId of toChatIds) {
+      await ctx.telegram.getChat(chatId);
+    }
+
+    await Config.findOneAndUpdate(
+      { fromChatId, userId },
+      { fromChatId, toChatIds, userId },
+      { upsert: true, new: true }
+    );
+
+    await ctx.reply(
+      `✅ Multi-channel forwarding setup successfully!\n` +
+      `From: ${fromChatId}\n` +
+      `To: ${toChatIds.join(', ')}`
+    );
+  } catch (error) {
+    await ctx.reply(
+      '❌ Error: Make sure the bot is admin in all chats and the chat IDs are correct!'
     );
   }
 });
@@ -117,7 +155,7 @@ bot.command('status', async (ctx) => {
     }
 
     const configList = configs
-      .map(c => `From ${c.fromChatId} → To ${c.toChatId}`)
+      .map(c => `From ${c.fromChatId} → To ${c.toChatIds.join(', ')}`)
       .join('\n');
 
     await ctx.reply(
@@ -128,26 +166,28 @@ bot.command('status', async (ctx) => {
   }
 });
 
-bot.on('message', async (ctx) => {
-  if (!ctx.message || !ctx.chat) {
+bot.on('channel_post', async (ctx) => {
+  if (!ctx.channelPost) {
     return;
   }
 
-  const fromChatId = ctx.chat.id.toString();
+  const fromChatId = ctx.channelPost.chat.id.toString();
   
   try {
     const configs = await Config.find({ fromChatId });
     
-    if (configs.length > 0 && !('text' in ctx.message && ctx.message.text?.startsWith('/'))) {
+    if (configs.length > 0) {
       for (const config of configs) {
-        try {
-          await ctx.telegram.copyMessage(
-            config.toChatId,
-            fromChatId,
-            ctx.message.message_id
-          );
-        } catch (error) {
-          console.error(`Forwarding error to ${config.toChatId}:`, error);
+        for (const toChatId of config.toChatIds) {
+          try {
+            await ctx.telegram.copyMessage(
+              toChatId,
+              fromChatId,
+              ctx.channelPost.message_id
+            );
+          } catch (error) {
+            console.error(`Forwarding error to ${toChatId}:`, error);
+          }
         }
       }
     }
@@ -166,5 +206,54 @@ bot.command('listchats', async (ctx) => {
   );
 });
 
-// Export the bot instance
+bot.command('clonebot', async (ctx) => {
+  if (!ctx.message || !ctx.from) {
+    return ctx.reply('Error: Invalid command context');
+  }
+
+  const args = ctx.message.text.split(' ').slice(1);
+  if (args.length !== 1) {
+    return ctx.reply(
+      'Usage: /clonebot <new_bot_token>\n\n' +
+      'To get a new bot token:\n' +
+      '1. Message @BotFather\n' +
+      '2. Use /newbot command\n' +
+      '3. Follow instructions to create new bot\n' +
+      '4. Copy and use the provided token'
+    );
+  }
+
+  const newBotToken = args[0];
+
+  try {
+    // Validate the new bot token
+    const tempBot = new Telegraf(newBotToken);
+    const me = await tempBot.telegram.getMe();
+
+    // Save the new bot token to the database
+    await Config.create({
+      fromChatId: 'clone',
+      toChatIds: ['clone'],
+      userId: ctx.from.id.toString(),
+      botToken: newBotToken
+    });
+
+    await ctx.reply(
+      `✅ Clone bot created successfully!\n` +
+      `Bot username: @${me.username}\n\n` +
+      `You can now use all commands with your new bot.`
+    );
+
+    // Start the new bot
+    tempBot.start();
+  } catch (error) {
+    await ctx.reply(
+      '❌ Error creating clone bot.\n' +
+      'Please check if the token is valid and try again.\n\n' +
+      'Make sure you\'re using a new token from @BotFather.'
+    );
+    console.error('Clone bot creation error:', error);
+  }
+});
+
 export { bot, connectToMongoDB };
