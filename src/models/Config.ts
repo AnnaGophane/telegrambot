@@ -1,19 +1,13 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IConfig extends Document {
-  fromChatId: string;
-  toChatIds: string[];
-  userId: string;
-  botToken?: string;
-  createdAt: Date;
+  chatId: number;
+  forwardTo: number;
 }
 
 const ConfigSchema: Schema = new Schema({
-  fromChatId: { type: String, required: true },
-  toChatIds: { type: [String], required: true },
-  userId: { type: String, required: true },
-  botToken: { type: String },
-  createdAt: { type: Date, default: Date.now }
+  chatId: { type: Number, required: true },
+  forwardTo: { type: Number, required: true }
 });
 
-export default mongoose.model<IConfig>('Config', ConfigSchema);
+export const Config = mongoose.model<IConfig>('Config', ConfigSchema);
