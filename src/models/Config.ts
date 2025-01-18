@@ -1,13 +1,38 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface IConfig extends Document {
-  chatId: number;
-  forwardTo: number;
+  sourceChatId: number;
+  forwardToChats: number[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const ConfigSchema: Schema = new Schema({
-  chatId: { type: Number, required: true },
-  forwardTo: { type: Number, required: true }
+  sourceChatId: { type: Number, required: true, unique: true },
+  forwardToChats: { type: [Number], required: true },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 });
 
 export const Config = mongoose.model<IConfig>('Config', ConfigSchema);
+
+// Create Log model for tracking bot usage
+export interface ILog extends Document {
+  action: string;
+  userId: number;
+  username: string;
+  chatId: number;
+  details: string;
+  timestamp: Date;
+}
+
+const LogSchema: Schema = new Schema({
+  action: { type: String, required: true },
+  userId: { type: Number, required: true },
+  username: { type: String },
+  chatId: { type: Number, required: true },
+  details: { type: String },
+  timestamp: { type: Date, default: Date.now }
+});
+
+export const Log = mongoose.model<ILog>('Log', LogSchema);
