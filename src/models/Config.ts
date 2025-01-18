@@ -1,5 +1,16 @@
-import mongoose, { Schema } from 'mongoose';
-import { IConfig } from '../types/config';
+import mongoose, { Schema, Document } from 'mongoose';
+
+export interface IConfig {
+  botToken: string;
+  channelUsername: string;
+  chatId?: string | number;
+  forwardToChats?: string[];
+}
+
+export interface ILog {
+  message: string;
+  timestamp: Date;
+}
 
 const configSchema = new Schema<IConfig>({
   botToken: { type: String, required: true },
@@ -8,4 +19,10 @@ const configSchema = new Schema<IConfig>({
   forwardToChats: { type: [String], default: [] },
 });
 
-export const ConfigModel = mongoose.model<IConfig>('Config', configSchema);
+const logSchema = new Schema<ILog>({
+  message: { type: String, required: true },
+  timestamp: { type: Date, default: Date.now },
+});
+
+export const Config = mongoose.model<IConfig & Document>('Config', configSchema);
+export const Log = mongoose.model<ILog & Document>('Log', logSchema);
