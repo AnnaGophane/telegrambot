@@ -5,7 +5,7 @@ const configSchema = new Schema<IConfig>({
   botToken: { type: String, required: true },
   channelUsername: { type: String, required: true },
   chatId: { type: Schema.Types.Mixed },
-  forwardToChats: { type: [String] }, // Add this line
+  forwardToChats: { type: [String], default: [] },
 });
 
-export const ConfigModel =
+export const ConfigModel = mongoose.model<IConfig>('Config', configSchema);
