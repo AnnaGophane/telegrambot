@@ -1,23 +1,27 @@
 import TelegramBot from 'node-telegram-bot-api';
+import mongoose from 'mongoose';
+import { Config } from './models/Config';
 
-// Replace with your bot token
 const token = process.env.BOT_TOKEN || '';
-const bot = new TelegramBot(token, { polling: true });
+export const bot = new TelegramBot(token, { polling: true });
 
-// Example of a function that was causing the error
-// Before: bot.sendMessage();
-// After: bot.sendMessage(chatId, message);
+export async function connectToMongoDB() {
+  const mongoURI = process.env.MONGODB_URI || '';
+  try {
+    await mongoose.connect(mongoURI);
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    throw error;
+  }
+}
+
 bot.on('message', async (msg) => {
   const chatId = msg.chat.id;
-  // Always provide required arguments
-  await bot.sendMessage(chatId, 'Received your message!');
-});
-
-// Error was likely in a similar function call
-bot.on('callback_query', async (query) => {
-  if (query.message) {
-    const chatId = query.message.chat.id;
-    // Fix: Always provide both chatId and message text
-    await bot.sendMessage(chatId, 'Processing your request...');
+  try {
+    // Your message handling logic here
+    await bot.sendMessage(chatId, 'Received your message!');
+  } catch (error) {
+    console.error('Error handling message:', error);
   }
 });
