@@ -16,7 +16,7 @@ const ConfigSchema: Schema = new Schema({
 
 export const Config = mongoose.model<IConfig>('Config', ConfigSchema);
 
-// Create Log model for tracking bot usage
+// Keep the Log model as is
 export interface ILog extends Document {
   action: string;
   userId: number;
