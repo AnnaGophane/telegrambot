@@ -119,9 +119,9 @@ bot.onText(/\/broadcast (.+)/, async (msg, match) => {
   }
 });
 
-// Update existing command handlers to include logging
+// Update existing command handlers to use sourceChatId instead of chatId
 bot.onText(/\/start/, async (msg) => {
-  const chatId = msg.chat.id;
+  const sourceChatId = msg.chat.id;
   const username = msg.from?.first_name || 'there';
   
   const welcomeMessage = `
@@ -141,13 +141,13 @@ I'm a Multi-Channel Auto Forward Bot. Here are my commands:
 Need help? Use /help command for more information.
 `;
   
-  await bot.sendMessage(chatId, welcomeMessage);
+  await bot.sendMessage(sourceChatId, welcomeMessage);
   
   await logAction({
     action: 'start',
     userId: msg.from?.id || 0,
     username: msg.from?.username || 'Unknown',
-    chatId,
+    chatId: sourceChatId,
     details: 'User started the bot'
   });
 });
