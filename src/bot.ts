@@ -28,7 +28,7 @@ if (APP_URL) {
   bot.telegram.setWebhook(`${APP_URL}/bot${BOT_TOKEN}`);
 }
 
-// Handle start command
+// Command handlers
 bot.command('start', async (ctx) => {
   await ctx.reply(
     'Welcome to Auto Forwarder! 👋\n\n' +
@@ -40,9 +40,7 @@ bot.command('start', async (ctx) => {
   );
 });
 
-// Handle setforward command
 bot.command('setforward', async (ctx) => {
-  // Check if message exists
   if (!ctx.message || !ctx.from) {
     return ctx.reply('Error: Invalid command context');
   }
@@ -62,8 +60,7 @@ bot.command('setforward', async (ctx) => {
     await Config.create({
       fromChatId,
       toChatId,
-      userId,
-      botToken: (ctx.telegram as any).token
+      userId
     });
 
     await ctx.reply(
@@ -78,9 +75,7 @@ bot.command('setforward', async (ctx) => {
   }
 });
 
-// Handle stopforward command
 bot.command('stopforward', async (ctx) => {
-  // Check if chat and from exist
   if (!ctx.chat || !ctx.from) {
     return ctx.reply('Error: Invalid command context');
   }
@@ -101,9 +96,7 @@ bot.command('stopforward', async (ctx) => {
   }
 });
 
-// Handle status command
 bot.command('status', async (ctx) => {
-  // Check if from exists
   if (!ctx.from) {
     return ctx.reply('Error: Invalid command context');
   }
@@ -129,9 +122,7 @@ bot.command('status', async (ctx) => {
   }
 });
 
-// Handle message forwarding
 bot.on('message', async (ctx) => {
-  // Check if message and chat exist
   if (!ctx.message || !ctx.chat) {
     return;
   }
@@ -159,7 +150,6 @@ bot.on('message', async (ctx) => {
   }
 });
 
-// Handle listchats command
 bot.command('listchats', async (ctx) => {
   await ctx.reply(
     'To get chat IDs:\n' +
@@ -170,5 +160,6 @@ bot.command('listchats', async (ctx) => {
   );
 });
 
-export { bot };
+// Export the bot instance
+export default bot;
 
