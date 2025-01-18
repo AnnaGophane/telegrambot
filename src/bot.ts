@@ -18,9 +18,15 @@ if (!BOT_TOKEN || !API_ID || !API_HASH || !MONGODB_URI) {
   throw new Error('Missing required environment variables!');
 }
 
-mongoose.connect(MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
+const connectToMongoDB = async () => {
+  try {
+    await mongoose.connect(MONGODB_URI);
+    console.log('Connected to MongoDB');
+  } catch (error) {
+    console.error('MongoDB connection error:', error);
+    process.exit(1);
+  }
+};
 
 const bot = new Telegraf(BOT_TOKEN);
 
@@ -161,5 +167,4 @@ bot.command('listchats', async (ctx) => {
 });
 
 // Export the bot instance
-export default bot;
-
+export { bot, connectToMongoDB };
