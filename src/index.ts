@@ -1,18 +1,16 @@
 import { bot, connectToMongoDB } from './bot';
+import dotenv from 'dotenv';
 
-const startBot = async () => {
+dotenv.config();
+
+async function startBot() {
   try {
     await connectToMongoDB();
-    await bot.launch();
-    console.log('Bot started successfully');
+    console.log('Bot is running...');
   } catch (error) {
-    console.error('Error starting bot:', error);
+    console.error('Failed to start bot:', error);
     process.exit(1);
   }
-};
+}
 
 startBot();
-
-// Enable graceful stop
-process.once('SIGINT', () => bot.stop('SIGINT'));
-process.once('SIGTERM', () => bot.stop('SIGTERM'));
