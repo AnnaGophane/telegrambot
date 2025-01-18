@@ -16,8 +16,4 @@ const ConfigSchema: Schema = new Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-// Create compound index for unique forwarding pairs
-ConfigSchema.index({ fromChatId: 1, toChatId: 1 }, { unique: true });
-
 export default mongoose.model<IConfig>('Config', ConfigSchema);
-
